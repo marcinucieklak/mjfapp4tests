@@ -1,0 +1,37 @@
+.card {
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.btn-outline-danger {
+  padding: 0.25rem 0.5rem;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

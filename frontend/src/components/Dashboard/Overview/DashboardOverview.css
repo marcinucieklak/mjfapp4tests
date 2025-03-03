@@ -1,0 +1,26 @@
+.dashboard-card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-light {
+  background-color: #f8f9fa;
+  border-color: #f0f0f0;
+}
+
+.btn-light:hover {
+  background-color: #e9ecef;
+  border-color: #e9ecef;
+}

@@ -1,4 +1,6 @@
+import { UserType } from './../enums/user-type.enum';
 import {
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -6,9 +8,10 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { UserType } from '../enums';
+import { Group } from './group.model';
+import { UserGroup } from './user-group.model';
 
-@Table({ charset: 'utf8mb4' })
+@Table({ charset: 'utf8mb4', tableName: 'users' })
 export class User extends Model {
   @Column({
     allowNull: false,
@@ -22,7 +25,19 @@ export class User extends Model {
     type: DataType.ENUM(...Object.values(UserType)),
     allowNull: false,
   })
-  type: string;
+  type: UserType;
+
+  @Column({
+    allowNull: false,
+    type: DataType.STRING,
+  })
+  name: string;
+
+  @Column({
+    allowNull: false,
+    type: DataType.STRING,
+  })
+  surname: string;
 
   @Column({ allowNull: false, unique: true })
   email: string;
@@ -32,6 +47,9 @@ export class User extends Model {
 
   @Column({ allowNull: true })
   recoveryCode: string;
+
+  @BelongsToMany(() => Group, () => UserGroup)
+  groups: Group[];
 
   @CreatedAt public createdAt: Date;
   @UpdatedAt public updatedAt: Date;

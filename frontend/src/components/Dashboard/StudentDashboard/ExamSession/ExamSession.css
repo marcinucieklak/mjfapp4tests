@@ -1,0 +1,29 @@
+.question-container {
+  background-color: var(--bs-light);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  transition: opacity 0.3s ease;
+}
+
+.question-container.d-none {
+  display: none;
+}
+
+.options-list {
+  margin-top: 1.5rem;
+}
+
+.form-check {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.form-check:hover {
+  background-color: var(--bs-light);
+}
+
+.form-check:last-child {
+  margin-bottom: 0;
+}

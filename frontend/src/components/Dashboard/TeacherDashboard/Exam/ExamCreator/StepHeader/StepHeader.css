@@ -1,0 +1,22 @@
+.progress {
+  background-color: var(--bs-gray-200);
+}
+
+.nav-pills .nav-link {
+  color: var(--bs-gray-700);
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-pills .nav-link:not(.active):hover {
+  background-color: var(--bs-gray-100);
+}
+
+.nav-pills .nav-link.active {
+  background-color: var(--bs-primary);
+  color: white;
+}
+
+.nav-pills .nav-link:disabled {
+  color: var(--bs-gray-500);
+  cursor: not-allowed;
+}

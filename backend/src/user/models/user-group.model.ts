@@ -2,6 +2,7 @@ import {
   BelongsTo,
   Column,
   CreatedAt,
+  ForeignKey,
   Model,
   Table,
   UpdatedAt,
@@ -9,7 +10,7 @@ import {
 import { Group } from './group.model';
 import { User } from './user.model';
 
-@Table({ charset: 'utf8mb4' })
+@Table({ tableName: 'user-groups' })
 export class UserGroup extends Model {
   @Column({
     allowNull: false,
@@ -18,6 +19,14 @@ export class UserGroup extends Model {
     primaryKey: true,
   })
   public id: number;
+
+  @ForeignKey(() => Group)
+  @Column({ allowNull: false })
+  groupId: number;
+
+  @ForeignKey(() => User)
+  @Column({ allowNull: false })
+  userId: number;
 
   @BelongsTo(() => Group, 'groupId')
   group: Group;

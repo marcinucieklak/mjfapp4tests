@@ -1,40 +1,68 @@
 import {
-  Table,
   Column,
-  DataType,
-  ForeignKey,
   Model,
+  Table,
+  ForeignKey,
   BelongsTo,
+  DataType,
 } from 'sequelize-typescript';
-import { Exam } from 'src/exam/models';
-import { Topic, Subtopic } from 'src/topic/models';
+import { Subject } from '../../subject/models/subject.model';
+import { Topic } from '../../topic/models/topic.model';
+import { Subtopic } from '../../topic/models/subtopic.model';
+import { User } from '../../user/models/user.model';
 
-@Table({ tableName: 'questions' })
+@Table({ charset: 'utf8mb4', tableName: 'questions' })
 export class Question extends Model {
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({
+    type: DataType.TEXT,
+    allowNull: false,
+  })
   text: string;
 
-  @Column({ type: DataType.JSON, allowNull: false })
+  @Column({
+    type: DataType.TEXT,
+    allowNull: false,
+    get() {
+      const rawValue = this.getDataValue('options');
+      return rawValue ? JSON.parse(rawValue) : [];
+    },
+    set(value: string[]) {
+      this.setDataValue('options', JSON.stringify(value));
+    },
+  })
   options: string[];
 
-  @Column({ type: DataType.INTEGER, allowNull: false })
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
   correctOption: number;
 
+  @ForeignKey(() => Subject)
+  @Column({ allowNull: true })
+  subjectId: number | null;
+
+  @BelongsTo(() => Subject)
+  subject: Subject;
+
   @ForeignKey(() => Topic)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  topicId: number;
-
-  @ForeignKey(() => Subtopic)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  subtopicId: number;
-
-  @ForeignKey(() => Exam)
-  @Column({ type: DataType.INTEGER, allowNull: true })
-  examId: number;
+  @Column({ allowNull: true })
+  topicId: number | null;
 
   @BelongsTo(() => Topic)
   topic: Topic;
 
+  @ForeignKey(() => Subtopic)
+  @Column({ allowNull: true })
+  subtopicId: number | null;
+
   @BelongsTo(() => Subtopic)
   subtopic: Subtopic;
+
+  @ForeignKey(() => User)
+  @Column({ allowNull: false })
+  createdById: number;
+
+  @BelongsTo(() => User)
+  createdBy: User;
 }

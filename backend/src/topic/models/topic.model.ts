@@ -1,31 +1,52 @@
 import {
-  Table,
   Column,
-  DataType,
-  ForeignKey,
   Model,
+  Table,
+  ForeignKey,
   BelongsTo,
   HasMany,
+  DataType,
+  CreatedAt,
+  UpdatedAt,
 } from 'sequelize-typescript';
-import { Subject } from 'src/subject/models/subject.model';
+import { Subject } from '../../subject/models/subject.model';
+import { User } from '../../user/models/user.model';
 import { Subtopic } from './subtopic.model';
-import { Question } from 'src/question/models/question.model';
 
-@Table({ tableName: 'topics' })
+@Table({ charset: 'utf8mb4', tableName: 'topics' })
 export class Topic extends Model {
-  @Column({ type: DataType.STRING, allowNull: false })
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+  })
   name: string;
 
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+  })
+  description: string;
+
   @ForeignKey(() => Subject)
-  @Column({ type: DataType.INTEGER })
+  @Column({ allowNull: false })
   subjectId: number;
 
   @BelongsTo(() => Subject)
   subject: Subject;
 
+  @ForeignKey(() => User)
+  @Column({ allowNull: false })
+  createdById: number;
+
+  @BelongsTo(() => User)
+  createdBy: User;
+
   @HasMany(() => Subtopic)
   subtopics: Subtopic[];
 
-  @HasMany(() => Question)
-  questions: Question[];
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
 }

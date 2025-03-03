@@ -1,0 +1,25 @@
+.item-card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+.item-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.btn-light {
+  background-color: #f8f9fa;
+  border-color: #f0f0f0;
+}
+
+.btn-light:hover {
+  background-color: #e9ecef;
+  border-color: #e9ecef;
+}
+
+.input-group .form-control:focus {
+  border-color: #dee2e6;
+  box-shadow: none;
+}

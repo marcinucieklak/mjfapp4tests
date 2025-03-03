@@ -1,0 +1,32 @@
+.exams-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.exam-card {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.exam-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-group .btn {
+  transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+  background-color: #e9ecef;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+.exams-container {
+  min-height: 400px;
+}

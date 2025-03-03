@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { ExamModule } from './exam/exam.module';
 import { UserModule } from './user/user.module';
-import { TeacherModule } from './teacher/teacher.module';
 import { SubjectModule } from './subject/subject.module';
 import { TopicModule } from './topic/topic.module';
 import { QuestionModule } from './question/question.module';
+import { AuthModule } from './auth/auth.module';
 import * as Joi from 'joi';
 import config from './config/config';
 
@@ -35,10 +35,10 @@ import config from './config/config';
     DatabaseModule,
     ExamModule,
     UserModule,
-    TeacherModule,
     SubjectModule,
     TopicModule,
     QuestionModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

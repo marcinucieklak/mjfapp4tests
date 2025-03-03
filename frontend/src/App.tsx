@@ -1,45 +1,75 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { TopicList } from "./components/TopicList";
-import { QuestionList } from "./components/QuestionList";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  DashboardOverview,
+  LoginPage,
+  RegisterPage,
+  ForgotPassword,
+  Dashboard,
+} from "./components";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthProvider } from "./providers";
+import { UserType } from "./types";
+import {
+  TeacherDashboard,
+  GroupManager,
+  SubjectsManager,
+  TopicList,
+  QuestionList,
+  ExamsManager,
+  ExamCreator,
+} from "./components/Dashboard/TeacherDashboard";
+import {
+  ExamSession,
+  StudentDashboard,
+  StudentExams,
+  StudentGroups,
+  StudentOverview,
+} from "./components/Dashboard/StudentDashboard";
 
 function App() {
-  const mockQuestions = [
-    {
-      id: 1,
-      text: "Sample question",
-      options: ["Option 1", "Option 2", "Option 3"],
-      correctOption: 0,
-    },
-  ];
-
-  const mockTopics = [
-    {
-      id: 1,
-      name: "Sample Topic",
-      subtopics: [{ id: 1, name: "Subtopic 1", topicId: 1 }],
-    },
-  ];
-
   return (
-    <Router>
-      <div className="container py-4">
-        <nav className="navbar navbar-expand-lg navbar-light bg-light mb-4">
-          <div className="container-fluid">
-            <a className="navbar-brand" href="/">
-              Exam System
-            </a>
-          </div>
-        </nav>
-
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<TopicList topics={mockTopics} />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route
-            path="/questions"
-            element={<QuestionList questions={mockQuestions} />}
-          />
+            path="/teacher/dashboard"
+            element={
+              <ProtectedRoute type={UserType.EXAMINER}>
+                <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardOverview />} />
+            <Route path="subjects" element={<SubjectsManager />} />
+            <Route path="topics" element={<TopicList />} />
+            <Route path="questions" element={<QuestionList />} />
+            <Route path="exams" element={<ExamsManager />} />
+            <Route path="exam/create" element={<ExamCreator />} />
+            <Route path="exam/edit/:id" element={<ExamCreator />} />
+            <Route path="groups" element={<GroupManager />} />
+          </Route>
+          <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute type={UserType.STUDENT}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<StudentOverview />} />
+            <Route path="groups" element={<StudentGroups />} />
+            <Route path="exams" element={<StudentExams />} />
+            <Route path="exams/:examId/take" element={<ExamSession />} />
+          </Route>
+          <Route></Route>
         </Routes>
-      </div>
-    </Router>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

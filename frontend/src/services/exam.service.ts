@@ -1,5 +1,5 @@
 import { api } from "../utils/api";
-import { DisplayMode, Exam } from "../types";
+import { DisplayMode, Exam, ExamSession } from "../types";
 
 export interface CreateExamDto {
   title: string;
@@ -9,6 +9,9 @@ export interface CreateExamDto {
   subjectId?: number;
   topicId?: number;
   subtopicId?: number;
+  timeLimit: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const examsService = {
@@ -32,4 +35,10 @@ export const examsService = {
     api.fetch(`/exams/${id}`, {
       method: "DELETE",
     }),
+
+  getExamWithSessions: (examId: number) =>
+    api.fetch<Exam>(`/exams/${examId}/results`),
+
+  getExamSessionDetails: (examId: number, sessionId: number) =>
+    api.fetch<ExamSession>(`/exams/${examId}/sessions/${sessionId}`),
 };

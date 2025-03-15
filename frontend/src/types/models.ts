@@ -6,6 +6,8 @@ export interface Question {
   topicId?: number;
   subtopicId?: number;
   examId?: number;
+  imageUrl?: string | null;
+  imageFullUrl?: string | null;
 }
 
 export interface Subject {
@@ -51,6 +53,10 @@ export interface Exam {
   subtopic?: Subtopic;
   createdAt: Date;
   updatedAt: Date;
+  timeLimit: number;
+  startDate?: string;
+  endDate?: string;
+  sessions?: ExamSession[];
 }
 
 export interface ExamFormData {
@@ -58,10 +64,20 @@ export interface ExamFormData {
   description?: string;
   displayMode: DisplayMode;
   selectedQuestions: number[];
+  timeLimit: number;
+  startDate?: string;
+  endDate?: string;
   groupId: number;
   subjectId: number | null;
   topicId: number | null;
   subtopicId: number | null;
+}
+
+export interface ExamAvailability {
+  canStart: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  timeLimit: number;
 }
 
 export enum DisplayMode {
@@ -147,6 +163,10 @@ export interface StudentExam {
   questionsCount: number;
   createdAt: Date;
   updatedAt: Date;
+  timeLimit: number;
+  startDate?: string;
+  endDate?: string;
+  sessions?: ExamSession[];
 }
 
 export interface ExamSession {
@@ -155,7 +175,11 @@ export interface ExamSession {
   status: "IN_PROGRESS" | "COMPLETED" | "EXPIRED";
   currentQuestionIndex: number;
   startedAt: Date;
-  completedAt?: Date;
+  updatedAt?: string;
+  student?: User;
+  score?: number;
+  timeoutAt: string | null;
+  timeRemaining: number | null;
   exam: {
     id: number;
     title: string;
@@ -203,9 +227,31 @@ export interface Question {
 
 export interface QuestionFormData {
   text: string;
+  image?: File | null;
+  imageUrl?: string | null;
   options: string[];
   correctOption: number;
   subjectId?: number | null;
   topicId?: number | null;
   subtopicId?: number | null;
+}
+
+export interface StudentOverview {
+  activeGroups: number;
+  upcomingExams: number;
+  availableExams: number;
+  recentExams: {
+    id: number;
+    title: string;
+    date: string;
+    score: string;
+  }[];
+}
+
+export interface DashboardOverview {
+  totalSubjects: number;
+  totalTopics: number;
+  totalQuestions: number;
+  totalExams: number;
+  activeGroups: number;
 }

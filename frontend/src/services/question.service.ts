@@ -13,16 +13,16 @@ export interface CreateQuestionDto {
 export const questionsService = {
   getQuestions: () => api.fetch<Question[]>("/questions"),
 
-  createQuestion: (data: CreateQuestionDto) =>
+  createQuestion: (formData: FormData) =>
     api.fetch<Question>("/questions", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: formData,
     }),
 
-  updateQuestion: (id: number, data: CreateQuestionDto) =>
+  updateQuestion: (id: number, formData: FormData) =>
     api.fetch<Question>(`/questions/${id}`, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: formData,
     }),
 
   deleteQuestion: (id: number) =>

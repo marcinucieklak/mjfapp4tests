@@ -19,8 +19,22 @@ export enum ExamSessionStatus {
   EXPIRED = 'EXPIRED',
 }
 
+type ExamSessionAttributes = {
+  id: number;
+  examId: number;
+  studentId: number;
+  status: ExamSessionStatus;
+  currentQuestionIndex: number;
+  score: number | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  timeoutAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 @Table({ charset: 'utf8mb4', tableName: 'exam-sessions' })
-export class ExamSession extends Model {
+export class ExamSession extends Model<ExamSessionAttributes> {
   @ForeignKey(() => Exam)
   @Column({ allowNull: false })
   examId: number;
@@ -49,11 +63,53 @@ export class ExamSession extends Model {
   })
   currentQuestionIndex: number;
 
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: true,
+    defaultValue: null,
+    validate: {
+      min: 0,
+      max: 100,
+    },
+  })
+  score: number;
+
   @Column({ type: DataType.DATE, allowNull: true })
   startedAt: Date;
 
   @Column({ type: DataType.DATE, allowNull: true })
   completedAt: Date;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare timeoutAt: Date | null;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    get() {
+      const timeout = this.getDataValue('timeoutAt');
+      if (!timeout) return null;
+      return Math.max(0, Math.floor((timeout.getTime() - Date.now()) / 1000));
+    },
+  })
+  declare timeRemaining: number | null;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    get() {
+      const timeRemaining = this.getDataValue('timeRemaining');
+      const status = this.getDataValue('status');
+
+      return timeRemaining === 0 && status === ExamSessionStatus.IN_PROGRESS;
+    },
+  })
+  isExpired: boolean;
+
+  isActive(): boolean {
+    return (
+      this.status === ExamSessionStatus.IN_PROGRESS &&
+      (this.timeRemaining === null || this.timeRemaining > 0)
+    );
+  }
 
   @HasMany(() => ExamAnswers)
   answers: ExamAnswers[];

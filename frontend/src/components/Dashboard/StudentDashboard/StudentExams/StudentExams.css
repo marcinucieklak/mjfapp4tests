@@ -28,3 +28,22 @@
   transform: translateY(-5px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
+.availability-info {
+  padding: 0.75rem;
+  background-color: var(--bs-light);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.availability-info i {
+  font-size: 1rem;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}

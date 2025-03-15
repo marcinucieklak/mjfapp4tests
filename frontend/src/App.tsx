@@ -17,6 +17,8 @@ import {
   QuestionList,
   ExamsManager,
   ExamCreator,
+  ExamResults,
+  StudentExamResults,
 } from "./components/Dashboard/TeacherDashboard";
 import {
   ExamSession,
@@ -51,6 +53,11 @@ function App() {
             <Route path="exams" element={<ExamsManager />} />
             <Route path="exam/create" element={<ExamCreator />} />
             <Route path="exam/edit/:id" element={<ExamCreator />} />
+            <Route path="exam-results/:examId" element={<ExamResults />} />
+            <Route
+              path="exam-results/:examId/student/:sessionId"
+              element={<StudentExamResults />}
+            />
             <Route path="groups" element={<GroupManager />} />
           </Route>
           <Route

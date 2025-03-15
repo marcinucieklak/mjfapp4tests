@@ -65,4 +65,29 @@ export class Question extends Model {
 
   @BelongsTo(() => User)
   createdBy: User;
+
+  @Column({
+    type: DataType.TEXT,
+    allowNull: true,
+    comment: 'Image URL or file path',
+  })
+  imageUrl: string | null;
+
+  @Column({
+    type: DataType.VIRTUAL,
+    get() {
+      const imageUrl = this.getDataValue('imageUrl');
+      if (!imageUrl) return null;
+      return `/uploads/questions/${imageUrl}`;
+    },
+  })
+  imageFullUrl: string | null;
+
+  toJSON() {
+    const values = super.toJSON();
+    if (values.imageUrl) {
+      values.imageUrl = `/uploads/questions/${values.imageUrl}`;
+    }
+    return values;
+  }
 }

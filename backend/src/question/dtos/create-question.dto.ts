@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
@@ -14,6 +15,13 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) => {
+    try {
+      return typeof value === 'string' ? JSON.parse(value) : value;
+    } catch {
+      return value;
+    }
+  })
   options: string[];
 
   @IsNotEmpty()
@@ -31,4 +39,8 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsNumber()
   subtopicId?: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }

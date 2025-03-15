@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Request,
@@ -34,9 +35,36 @@ export class StudentController {
     return this.studentService.getMyExams(req.user.userId);
   }
 
+  @Get('overview')
+  @Roles(UserType.STUDENT)
+  async getOverview(@Request() req) {
+    return this.studentService.getOverview(req.user.userId);
+  }
+
   @Get('exams/:id')
   async getExam(@Param('id') id: string, @Request() req) {
     return this.studentService.getExam(+id, req.user.userId);
+  }
+
+  @Get('exams/:id/availability')
+  async checkAvailability(@Param('id') id: string, @Request() req) {
+    const exam = await this.examService.getExam(+id, req.user.userId);
+
+    if (!exam) {
+      throw new NotFoundException(`Exam with ID ${id} not found`);
+    }
+
+    const now = new Date();
+
+    return {
+      canStart:
+        exam.isActive &&
+        (!exam.startDate || now >= exam.startDate) &&
+        (!exam.endDate || now <= exam.endDate),
+      startDate: exam.startDate,
+      endDate: exam.endDate,
+      timeLimit: exam.timeLimit,
+    };
   }
 
   @Post('exam-sessions/:examId/start')

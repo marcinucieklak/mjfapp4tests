@@ -9,6 +9,9 @@ import {
   Question,
 } from "../../../../types/models";
 import "./ExamSession.css";
+import { formatDateTime, formatTime, shuffle } from "../../../../utils";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const ExamSession = () => {
   const { examId } = useParams();
@@ -17,12 +20,75 @@ export const ExamSession = () => {
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<Map<number, string>>(
+    new Map()
+  );
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
+  const [shuffledOptions, setShuffledOptions] = useState<Map<number, string[]>>(
+    new Map()
+  );
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
+
+  const handleImageLoad = (questionId: number) => {
+    setLoadingImages((prev) => {
+      const next = new Set(prev);
+      next.delete(questionId);
+      return next;
+    });
+  };
+
+  const handleImageError = (questionId: number) => {
+    setLoadingImages((prev) => {
+      const next = new Set(prev);
+      next.delete(questionId);
+      return next;
+    });
+    toast.error("Failed to load question image");
+  };
 
   useEffect(() => {
-    const startExam = async () => {
+    const checkAvailability = async () => {
       try {
+        const availability = await studentsService.checkAvailability(
+          Number(examId)
+        );
+
+        if (!availability.canStart) {
+          if (
+            availability.startDate &&
+            new Date(availability.startDate) > new Date()
+          ) {
+            toast.error(
+              `Exam will be available from ${formatDateTime(
+                availability.startDate
+              )}`
+            );
+          } else if (
+            availability.endDate &&
+            new Date(availability.endDate) < new Date()
+          ) {
+            toast.error(
+              `Exam has ended on ${formatDateTime(availability.endDate)}`
+            );
+          } else {
+            toast.error("Exam is not available");
+          }
+          navigate("/student/dashboard/exams");
+          return;
+        }
+
         const data = await studentsService.startExam(Number(examId));
         setSession(data);
+
+        const shuffled = shuffle(data.exam.questions);
+        setShuffledQuestions(shuffled);
+
+        const optionsMap = new Map();
+        shuffled.forEach((question) => {
+          optionsMap.set(question.id, shuffle(question.options));
+        });
+        setShuffledOptions(optionsMap);
       } catch {
         toast.error("Failed to start exam");
         navigate("/student/dashboard/exams");
@@ -31,8 +97,30 @@ export const ExamSession = () => {
       }
     };
 
-    startExam();
+    checkAvailability();
   }, [examId, navigate]);
+
+  useEffect(() => {
+    if (!session?.timeoutAt) return;
+
+    const timer = setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.floor(
+          (new Date(session.timeoutAt as string).getTime() - Date.now()) / 1000
+        )
+      );
+      setTimeRemaining(remaining);
+
+      if (remaining === 0) {
+        clearInterval(timer);
+        handleTimeExpired();
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.timeoutAt]);
 
   const handleAnswerSubmit = async (questionId: number, answer: string) => {
     if (!session) return;
@@ -100,11 +188,40 @@ export const ExamSession = () => {
     }
   };
 
+  const handleTimeExpired = async () => {
+    try {
+      await studentsService.finishExam(session!.id);
+      toast.warning("Exam time has expired");
+      navigate("/student/dashboard/exams");
+    } catch {
+      toast.error("Failed to finish exam");
+    }
+  };
+
   const renderQuestion = (question: Question, index: number) => {
     const isCurrentQuestion = index === session?.currentQuestionIndex;
-    const answer = session?.answers.find(
+    const submittedAnswer = session?.answers.find(
       (a) => a.questionId === question.id
     )?.answer;
+    const selectedAnswer = selectedAnswers.get(question.id);
+    const shuffledOptionsList = shuffledOptions.get(question.id) || [];
+
+    const handleOptionChange = (option: string) => {
+      if (session?.exam.questionDisplayMode === DisplayMode.SINGLE) {
+        setCurrentAnswer(option);
+      } else {
+        setSelectedAnswers(new Map(selectedAnswers.set(question.id, option)));
+      }
+    };
+
+    const handleAnswerClick = () => {
+      if (session?.exam.questionDisplayMode === DisplayMode.ALL) {
+        const answer = selectedAnswers.get(question.id);
+        if (answer) {
+          handleAnswerSubmit(question.id, answer);
+        }
+      }
+    };
 
     return (
       <div
@@ -116,19 +233,45 @@ export const ExamSession = () => {
             : ""
         }`}
       >
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-start mb-3">
           <h5 className="mb-0">Question {index + 1}</h5>
           {session?.exam.questionDisplayMode === DisplayMode.ALL && (
-            <span className="badge bg-secondary">
-              {answer ? "Answered" : "Not answered"}
+            <span
+              className={`badge ${
+                submittedAnswer ? "bg-success" : "bg-secondary"
+              } ms-2`}
+            >
+              {submittedAnswer ? "Answered" : "Not answered"}
             </span>
           )}
         </div>
 
-        <p>{question.text}</p>
+        <p className="mb-4">{question.text}</p>
+
+        {question.imageFullUrl && (
+          <div className="question-image-container mb-4">
+            {loadingImages.has(question.id) && (
+              <div className="image-loading-placeholder d-flex align-items-center justify-content-center">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading image...</span>
+                </div>
+              </div>
+            )}
+            <img
+              src={`${API_URL}${question.imageFullUrl}`}
+              alt="Question illustration"
+              className={`question-image ${
+                loadingImages.has(question.id) ? "invisible" : ""
+              }`}
+              loading="lazy"
+              onLoad={() => handleImageLoad(question.id)}
+              onError={() => handleImageError(question.id)}
+            />
+          </div>
+        )}
 
         <div className="options-list">
-          {question.options?.map((option, optionIndex) => (
+          {shuffledOptionsList.map((option, optionIndex) => (
             <div className="form-check" key={optionIndex}>
               <input
                 className="form-check-input"
@@ -138,19 +281,11 @@ export const ExamSession = () => {
                 value={option}
                 checked={
                   session?.exam.questionDisplayMode === DisplayMode.ALL
-                    ? currentAnswer === option
-                    : answer === option
+                    ? option === (submittedAnswer || selectedAnswer)
+                    : option === currentAnswer
                 }
-                onChange={(e) => {
-                  if (
-                    session?.exam.questionDisplayMode === DisplayMode.SINGLE
-                  ) {
-                    setCurrentAnswer(e.target.value);
-                  } else {
-                    handleAnswerSubmit(question.id, e.target.value);
-                  }
-                }}
-                disabled={isSubmitting}
+                onChange={(e) => handleOptionChange(e.target.value)}
+                disabled={isSubmitting || submittedAnswer !== undefined}
               />
               <label
                 className="form-check-label"
@@ -161,6 +296,25 @@ export const ExamSession = () => {
             </div>
           ))}
         </div>
+        {session?.exam.questionDisplayMode === DisplayMode.ALL &&
+          !submittedAnswer && (
+            <div className="text-end mt-3">
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleAnswerClick}
+                disabled={!selectedAnswers.has(question.id) || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Answer"
+                )}
+              </button>
+            </div>
+          )}
       </div>
     );
   };
@@ -197,6 +351,15 @@ export const ExamSession = () => {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h4 className="card-title mb-0">{session.exam.title}</h4>
+            {timeRemaining !== null && (
+              <div
+                className={`badge ${
+                  timeRemaining < 300 ? "bg-danger" : "bg-primary"
+                }`}
+              >
+                Time Remaining: {formatTime(timeRemaining)}
+              </div>
+            )}
             <div className="d-flex gap-3 align-items-center">
               <span className="badge bg-secondary">
                 {session.exam.group.name}
@@ -211,7 +374,7 @@ export const ExamSession = () => {
             </div>
           </div>
 
-          {session.exam.questions.map((question, index) =>
+          {shuffledQuestions.map((question, index) =>
             renderQuestion(question, index)
           )}
 

@@ -77,19 +77,6 @@ export const TeacherDashboard = () => {
               <li className="nav-item">
                 <Link
                   className={`nav-link d-flex align-items-center gap-2 py-3 px-3 ${
-                    location.pathname.includes("/teacher/dashboard/exams")
-                      ? "active"
-                      : ""
-                  }`}
-                  to="/teacher/dashboard/exams"
-                >
-                  <PencilSquare size={18} />
-                  <span>Exams</span>
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link
-                  className={`nav-link d-flex align-items-center gap-2 py-3 px-3 ${
                     location.pathname.includes("/teacher/dashboard/groups")
                       ? "active"
                       : ""
@@ -98,6 +85,19 @@ export const TeacherDashboard = () => {
                 >
                   <People size={18} />
                   <span>Groups</span>
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link
+                  className={`nav-link d-flex align-items-center gap-2 py-3 px-3 ${
+                    location.pathname.includes("/teacher/dashboard/exams")
+                      ? "active"
+                      : ""
+                  }`}
+                  to="/teacher/dashboard/exams"
+                >
+                  <PencilSquare size={18} />
+                  <span>Exams</span>
                 </Link>
               </li>
               <li className="nav-item mt-auto">

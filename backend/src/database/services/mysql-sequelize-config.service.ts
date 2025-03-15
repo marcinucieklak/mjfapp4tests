@@ -19,7 +19,7 @@ export class MysqlSequelizeConfigService implements SequelizeOptionsFactory {
       username: this.configService.get<string>('database.username'),
       password: this.configService.get<string>('database.password'),
       database: this.configService.get<string>('database.database'),
-      ssl: true,
+      logging: process.env.NODE_ENV === 'development',
     };
   }
 }

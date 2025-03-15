@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash, PersonAdd } from "react-bootstrap-icons";
+import { Plus, Trash, PersonAdd, Pencil } from "react-bootstrap-icons";
 import { toast } from "react-toastify";
 import { Group, User } from "../../../../types";
 import { groupsService, studentsService } from "../../../../services";
 import { useForm } from "react-hook-form";
-import { Modal } from "react-bootstrap";
+import { Modal, ToastContainer } from "react-bootstrap";
 import { joiResolver } from "@hookform/resolvers/joi";
 import Joi from "joi";
 import "./GroupsManager.css";
+import { ApiError } from "../../../../utils";
 
 interface AddGroupForm {
   name: string;
@@ -37,6 +38,10 @@ export const GroupManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [students, setStudents] = useState<User[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [groupToEdit, setGroupToEdit] = useState<Group | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
 
   const {
     register: registerGroup,
@@ -104,6 +109,42 @@ export const GroupManager = () => {
       toast.success("Group created successfully");
     } catch {
       toast.error("Failed to create group");
+    }
+  };
+
+  const handleEditGroup = async (groupId: number, name: string) => {
+    try {
+      await groupsService.updateGroup(groupId, { name });
+      setGroups(
+        groups.map((group) =>
+          group.id === groupId ? { ...group, name } : group
+        )
+      );
+      setShowEditModal(false);
+      setGroupToEdit(null);
+      toast.success("Group updated successfully");
+    } catch {
+      toast.error("Failed to update group");
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: number) => {
+    try {
+      await groupsService.deleteGroup(groupId);
+      toast.success("Group deleted successfully");
+      setGroups(groups.filter((group) => group.id !== groupId));
+      setShowDeleteModal(false);
+      setGroupToDelete(null);
+    } catch (error) {
+      console.error(error);
+      if (error instanceof ApiError) {
+        if (error.status === 409) {
+          toast.error("Cannot delete group with associated exams");
+          return;
+        }
+      }
+
+      toast.error("Failed to delete group");
     }
   };
 
@@ -179,15 +220,35 @@ export const GroupManager = () => {
             <div className="card h-100">
               <div className="card-header bg-white d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">{group.name}</h5>
-                <button
-                  className="btn btn-outline-primary btn-sm"
-                  onClick={() => {
-                    setShowAddStudentModal(true);
-                    setSelectedGroup(group);
-                  }}
-                >
-                  <PersonAdd size={16} />
-                </button>
+                <div className="d-flex gap-2 group">
+                  <button
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={() => {
+                      setGroupToEdit(group);
+                      setShowEditModal(true);
+                    }}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={() => {
+                      setShowAddStudentModal(true);
+                      setSelectedGroup(group);
+                    }}
+                  >
+                    <PersonAdd size={16} />
+                  </button>
+                  <button
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => {
+                      setGroupToDelete(group);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    <Trash size={16} />
+                  </button>
+                </div>
               </div>
               <div className="card-body">
                 <div className="table-responsive">
@@ -201,23 +262,31 @@ export const GroupManager = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {group.students.map((student) => (
-                        <tr key={student.id}>
-                          <td>{student.name}</td>
-                          <td>{student.surname}</td>
-                          <td>{student.email}</td>
-                          <td>
-                            <button
-                              className="btn btn-outline-danger btn-sm"
-                              onClick={() =>
-                                handleDeleteStudent(group.id, student.id)
-                              }
-                            >
-                              <Trash size={14} />
-                            </button>
+                      {group.students ? (
+                        group.students.map((student) => (
+                          <tr key={student.id}>
+                            <td>{student.name}</td>
+                            <td>{student.surname}</td>
+                            <td>{student.email}</td>
+                            <td>
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() =>
+                                  handleDeleteStudent(group.id, student.id)
+                                }
+                              >
+                                <Trash size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="text-center">
+                            No students in this group
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -326,6 +395,95 @@ export const GroupManager = () => {
           </form>
         </Modal.Body>
       </Modal>
+
+      <Modal
+        show={showEditModal}
+        onHide={() => {
+          setShowEditModal(false);
+          setGroupToEdit(null);
+        }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (groupToEdit) {
+                handleEditGroup(
+                  groupToEdit.id,
+                  e.currentTarget.groupName.value
+                );
+              }
+            }}
+          >
+            <div className="mb-3">
+              <label className="form-label">Group Name</label>
+              <input
+                type="text"
+                name="groupName"
+                className="form-control"
+                defaultValue={groupToEdit?.name}
+                required
+              />
+            </div>
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setGroupToEdit(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </Modal.Body>
+      </Modal>
+
+      <Modal
+        show={showDeleteModal}
+        onHide={() => {
+          setShowDeleteModal(false);
+          setGroupToDelete(null);
+        }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Group</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Are you sure you want to delete the group "{groupToDelete?.name}"?
+          </p>
+          <p className="text-danger">This action cannot be undone.</p>
+          <div className="d-flex justify-content-end gap-2">
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setGroupToDelete(null);
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() =>
+                groupToDelete && handleDeleteGroup(groupToDelete.id)
+              }
+            >
+              Delete Group
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+      <ToastContainer />
     </div>
   );
 };

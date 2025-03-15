@@ -9,8 +9,8 @@ import { examSchema } from "./validation";
 import { useInitialData } from "../../../../../hooks";
 import { StepHeader } from "./StepHeader";
 import { StepNavigation } from "./StepNavigation";
-import "./ExamCreator.css";
 import { LoadingSpinner } from "../../../../Common";
+import "./ExamCreator.css";
 
 export const ExamCreator = () => {
   const { id } = useParams();
@@ -22,6 +22,10 @@ export const ExamCreator = () => {
   const { questions, subjects, topics, groups } = useInitialData({
     setIsLoading,
   });
+
+  const defaultStartDate = new Date();
+  const defaultEndDate = new Date();
+  defaultEndDate.setDate(defaultEndDate.getDate() + 1);
 
   const {
     register,
@@ -38,6 +42,9 @@ export const ExamCreator = () => {
       subjectId: null,
       topicId: null,
       subtopicId: null,
+      timeLimit: 0,
+      startDate: defaultStartDate.toISOString().slice(0, 16),
+      endDate: defaultEndDate.toISOString().slice(0, 16),
     },
   });
 
@@ -55,6 +62,13 @@ export const ExamCreator = () => {
             subjectId: exam.subjectId || null,
             topicId: exam.topicId || null,
             subtopicId: exam.subtopicId || null,
+            timeLimit: exam.timeLimit || 0,
+            startDate: exam.startDate
+              ? new Date(exam.startDate).toISOString().slice(0, 16)
+              : undefined,
+            endDate: exam.endDate
+              ? new Date(exam.endDate).toISOString().slice(0, 16)
+              : undefined,
           });
         } catch {
           toast.error("Failed to load exam");
@@ -79,6 +93,26 @@ export const ExamCreator = () => {
             setValue("groupId", 0, { shouldValidate: true });
             toast.error("Please select a group");
           }
+          if (!watch("startDate")) {
+            setValue("startDate", "", { shouldValidate: true });
+            toast.error("Start date is required");
+          }
+          if (!watch("endDate")) {
+            setValue("endDate", "", { shouldValidate: true });
+            toast.error("End date is required");
+          }
+
+          const startDate = watch("startDate");
+          const endDate = watch("endDate");
+          if (
+            startDate &&
+            endDate &&
+            new Date(endDate) <= new Date(startDate)
+          ) {
+            setValue("endDate", "", { shouldValidate: true });
+            toast.error("End date must be after start date");
+          }
+
           isValid = false;
         }
         break;
@@ -143,6 +177,65 @@ export const ExamCreator = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="mt-3">
+              <label className="form-label">Time Limit (minutes)</label>
+              <input
+                type="number"
+                className={`form-control ${
+                  errors.timeLimit ? "is-invalid" : ""
+                }`}
+                {...register("timeLimit")}
+                min="0"
+                max="180"
+              />
+              <small className="text-muted">
+                Set to 0 for no time limit (max 180 minutes)
+              </small>
+              {errors.timeLimit && (
+                <div className="invalid-feedback">
+                  {errors.timeLimit.message}
+                </div>
+              )}
+            </div>
+
+            <div className="row mt-3">
+              <div className="col-md-6">
+                <label className="form-label">Start Date</label>
+                <input
+                  type="datetime-local"
+                  className={`form-control ${
+                    errors.startDate ? "is-invalid" : ""
+                  }`}
+                  {...register("startDate", { required: true })}
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                {errors.startDate && (
+                  <div className="invalid-feedback">
+                    {errors.startDate.message}
+                  </div>
+                )}
+              </div>
+
+              <div className="col-md-6">
+                <label className="form-label">End Date</label>
+                <input
+                  type="datetime-local"
+                  className={`form-control ${
+                    errors.endDate ? "is-invalid" : ""
+                  }`}
+                  {...register("endDate", { required: true })}
+                  min={
+                    watch("startDate") || new Date().toISOString().slice(0, 16)
+                  }
+                />
+                {errors.endDate && (
+                  <div className="invalid-feedback">
+                    {errors.endDate.message}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -317,6 +410,9 @@ export const ExamCreator = () => {
         subjectId: data.subjectId || undefined,
         topicId: data.topicId || undefined,
         subtopicId: data.subtopicId || undefined,
+        timeLimit: data.timeLimit,
+        startDate: data.startDate || undefined,
+        endDate: data.endDate || undefined,
       };
 
       if (id) {

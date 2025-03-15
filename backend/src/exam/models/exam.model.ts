@@ -5,6 +5,7 @@ import {
   CreatedAt,
   DataType,
   ForeignKey,
+  HasMany,
   Model,
   Table,
   UpdatedAt,
@@ -16,6 +17,7 @@ import { ExamQuestion } from './exam-questions.model';
 import { Topic, Subtopic } from 'src/topic/models';
 import { Subject } from 'src/subject/models/subject.model';
 import { DisplayMode } from '../types';
+import { ExamSession } from './exam-sessions.model';
 
 @Table({ charset: 'utf8mb4', tableName: 'exams' })
 export class Exam extends Model {
@@ -80,6 +82,9 @@ export class Exam extends Model {
 
   @BelongsTo(() => Subtopic)
   subtopic: Subtopic;
+
+  @HasMany(() => ExamSession)
+  sessions: ExamSession[];
 
   @CreatedAt
   createdAt: Date;

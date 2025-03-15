@@ -5,7 +5,7 @@ import { UserType } from "../../types";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -19,8 +19,10 @@ export const Dashboard = () => {
         default:
           navigate("/login");
       }
+    } else if (!isLoading && !user) {
+      navigate("/login");
     }
-  }, [user, navigate]);
+  }, [user, navigate, isLoading]);
 
   return (
     <div className="d-flex justify-content-center align-items-center min-vh-100">

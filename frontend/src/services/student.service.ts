@@ -1,5 +1,12 @@
 import { api } from "../utils/api";
-import { ExamSession, Group, StudentExam, User } from "../types/models";
+import {
+  ExamAvailability,
+  ExamSession,
+  Group,
+  StudentExam,
+  StudentOverview,
+  User,
+} from "../types/models";
 
 export const studentsService = {
   getStudents: () => api.fetch<User[]>("/users/students"),
@@ -25,4 +32,9 @@ export const studentsService = {
     api.fetch<void>(`/students/exam-sessions/${sessionId}/finish`, {
       method: "POST",
     }),
+
+  getOverview: () => api.fetch<StudentOverview>("/students/overview"),
+
+  checkAvailability: (examId: number) =>
+    api.fetch<ExamAvailability>(`/students/exams/${examId}/availability`),
 };

@@ -2,34 +2,11 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { Plus, Trash } from "react-bootstrap-icons";
 import { QuestionFormData, Subject, Topic } from "../../../../../types";
 import { joiResolver } from "@hookform/resolvers/joi";
-import Joi from "joi";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { subjectsService } from "../../../../../services";
 import { toast } from "react-toastify";
-
-const questionSchema = Joi.object({
-  text: Joi.string().required().messages({
-    "string.empty": "Question text is required",
-  }),
-  options: Joi.array()
-    .min(2)
-    .items(
-      Joi.string().required().messages({
-        "string.empty": "Option cannot be empty",
-      })
-    )
-    .required()
-    .messages({
-      "array.min": "At least 2 options are required",
-      "array.base": "Options are required",
-    }),
-  correctOption: Joi.number().required().messages({
-    "number.base": "Correct option must be selected",
-  }),
-  subjectId: Joi.number().allow(null),
-  topicId: Joi.number().allow(null),
-  subtopicId: Joi.number().allow(null),
-}).options({ stripUnknown: true });
+import { questionSchema } from "./validation";
+import "./QuestionForm.css";
 
 interface QuestionFormProps {
   initialData?: QuestionFormData;
@@ -51,10 +28,17 @@ export const QuestionForm = ({
     getValues,
   } = useForm<QuestionFormData>({
     resolver: joiResolver(questionSchema),
-    defaultValues: initialData || {
-      options: ["", ""],
-      correctOption: 0,
+    defaultValues: {
+      ...initialData,
+      options: initialData?.options || ["", ""],
+      correctOption: initialData?.correctOption || 0,
+      image: null,
+      imageUrl: initialData?.imageUrl || null,
+      subjectId: initialData?.subjectId || null,
+      topicId: initialData?.topicId || null,
+      subtopicId: initialData?.subtopicId || null,
     },
+    mode: "onChange",
   });
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
@@ -62,6 +46,10 @@ export const QuestionForm = ({
     useState<Subject | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    initialData?.imageUrl || null
+  );
 
   const { fields, append, remove } = useFieldArray<QuestionFormData>({
     control,
@@ -82,6 +70,40 @@ export const QuestionForm = ({
 
     fetchSubjects();
   }, []);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const data = await subjectsService.getSubjects();
+        setSubjects(data);
+
+        // If we have initial subject ID, fetch its details
+        if (initialData?.subjectId) {
+          setIsLoadingDetails(true);
+          const details = await subjectsService.getSubjectDetails(
+            initialData.subjectId
+          );
+          setSelectedSubjectDetails(details);
+
+          // If we have initial topic, set it
+          if (initialData.topicId) {
+            const topic = details.topics?.find(
+              (t) => t.id === initialData.topicId
+            );
+            setSelectedTopic(topic || null);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch initial data:", error);
+        toast.error("Failed to load data");
+      } finally {
+        setIsLoadingSubjects(false);
+        setIsLoadingDetails(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [initialData?.subjectId, initialData?.topicId]);
 
   const handleSubjectChange = async (subjectId: string) => {
     const id = subjectId ? Number(subjectId) : null;
@@ -120,6 +142,44 @@ export const QuestionForm = ({
     setSelectedTopic(newSelectedTopic || null);
   };
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file");
+        return;
+      }
+
+      setValue("image", file, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue("imageUrl", null);
+
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setValue("image", null, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue("imageUrl", null);
+
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="mb-3">
@@ -134,13 +194,49 @@ export const QuestionForm = ({
         )}
       </div>
 
+      <div className="mb-3">
+        <label className="form-label">Image (optional)</label>
+        <div className="d-flex gap-3 align-items-start">
+          <div className="flex-grow-1">
+            <input
+              type="file"
+              className="form-control"
+              accept="image/*"
+              onChange={handleImageChange}
+              ref={fileInputRef}
+            />
+            <small className="text-muted d-block mt-1">
+              Max file size: 5MB. Supported formats: JPG, PNG, GIF
+            </small>
+          </div>
+          {previewUrl && (
+            <div className="position-relative">
+              <img
+                src={previewUrl}
+                alt="Question preview"
+                className="rounded"
+                style={{ maxHeight: "100px" }}
+              />
+              <button
+                type="button"
+                className="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                onClick={handleRemoveImage}
+              >
+                <Trash size={12} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="row g-3 mb-3">
         <div className="col-md-4">
-          <label className="form-label">Subject (optional)</label>
+          <label className="form-label">Subject</label>
           <select
-            className="form-select"
+            className={`form-select ${errors.subjectId ? "is-invalid" : ""}`}
             {...register("subjectId")}
             onChange={(e) => handleSubjectChange(e.target.value)}
+            value={getValues("subjectId")?.toString() || ""}
           >
             <option value="">Select Subject</option>
             {subjects.map((subject) => (
@@ -151,6 +247,9 @@ export const QuestionForm = ({
           </select>
           {isLoadingSubjects && (
             <div className="form-text text-muted">Loading subjects...</div>
+          )}
+          {errors.subjectId && (
+            <div className="invalid-feedback">{errors.subjectId.message}</div>
           )}
         </div>
 

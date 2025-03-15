@@ -103,7 +103,14 @@ export const ExamsManager = () => {
                         Created {formatDate(exam.createdAt)}
                       </small>
                       <div className="btn-group">
-                        <button className="btn btn-light btn-sm">
+                        <button
+                          className="btn btn-light btn-sm"
+                          onClick={() =>
+                            navigate(
+                              `/teacher/dashboard/exam-results/${exam.id}`
+                            )
+                          }
+                        >
                           <Eye size={16} />
                         </button>
                         <button

@@ -1,29 +1,109 @@
 .question-container {
   background-color: var(--bs-light);
-  padding: 2rem;
   border-radius: 0.5rem;
-  transition: opacity 0.3s ease;
+  padding: 1.5rem;
 }
 
-.question-container.d-none {
-  display: none;
+.question-container h5 {
+  word-break: break-word;
+}
+
+.question-container p {
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin-bottom: 1.5rem;
 }
 
 .options-list {
-  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .form-check {
-  margin-bottom: 1rem;
   padding: 1rem;
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;
-  transition: background-color 0.2s ease;
+  margin: 0;
+  transition: all 0.2s ease-in-out;
 }
 
-.form-check:hover {
+.form-check:hover:not(.form-check-input:disabled ~ label) {
   background-color: var(--bs-light);
+  cursor: pointer;
 }
 
-.form-check:last-child {
-  margin-bottom: 0;
+.form-check-input {
+  margin-top: 0.25rem;
+}
+
+.form-check-label {
+  padding-left: 0.5rem;
+  word-break: break-word;
+  white-space: pre-wrap;
+  cursor: pointer;
+  width: 100%;
+}
+
+.form-check-input:disabled ~ .form-check-label {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .question-container {
+    padding: 1rem;
+  }
+
+  .form-check {
+    padding: 0.75rem;
+  }
+}
+
+.question-image-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.question-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  max-height: 400px;
+}
+
+@media (max-width: 768px) {
+  .question-image-container {
+    max-width: 100%;
+  }
+
+  .question-image {
+    max-height: 300px;
+  }
+}
+
+.image-loading-placeholder {
+  height: 200px;
+  background-color: var(--bs-light);
+  border-radius: 8px;
+}
+
+.invisible {
+  visibility: hidden;
+}
+
+.question-image-container {
+  position: relative;
+}
+
+.question-image-container .spinner-border {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }

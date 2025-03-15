@@ -1,7 +1,7 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Exam } from '../models/exam.model';
@@ -29,6 +29,11 @@ export class ExamService {
     const exam = await this.examModel.create({
       ...createExamDto,
       createdById: userId,
+      isActive: true,
+      startDate: createExamDto.startDate
+        ? new Date(createExamDto.startDate)
+        : null,
+      endDate: createExamDto.endDate ? new Date(createExamDto.endDate) : null,
     });
 
     if (createExamDto.questionIds?.length) {
@@ -87,6 +92,14 @@ export class ExamService {
           model: User,
           as: 'createdBy',
           attributes: ['id', 'name', 'surname'],
+        },
+        {
+          model: ExamSession,
+          required: false,
+          where: {
+            studentId: userId,
+          },
+          attributes: ['id', 'status', 'score', 'completedAt'],
         },
       ],
     });
@@ -147,8 +160,34 @@ export class ExamService {
       throw new NotFoundException(`Exam with ID ${id} not found`);
     }
 
-    await exam.destroy();
-    return { id };
+    try {
+      await this.examModel.sequelize?.transaction(async (t) => {
+        const sessions = await this.examSessionModel.findAll({
+          where: { examId: id },
+          transaction: t,
+        });
+
+        const sessionIds = sessions.map((session) => session.id);
+
+        if (sessionIds.length > 0) {
+          await this.examAnswersModel.destroy({
+            where: { sessionId: sessionIds },
+            transaction: t,
+          });
+        }
+
+        await this.examSessionModel.destroy({
+          where: { examId: id },
+          transaction: t,
+        });
+
+        await exam.destroy({ transaction: t });
+      });
+
+      return { id };
+    } catch {
+      throw new Error('Failed to delete exam and its related data');
+    }
   }
 
   async startExam(examId: number, userId: number) {
@@ -182,6 +221,16 @@ export class ExamService {
       throw new NotFoundException('Exam not found or access denied');
     }
 
+    const now = new Date();
+
+    if (exam.startDate && now < exam.startDate) {
+      throw new BadRequestException('Exam has not started yet');
+    }
+
+    if (exam.endDate && now > exam.endDate) {
+      throw new BadRequestException('Exam has ended');
+    }
+
     const existingSession = await this.examSessionModel.findOne({
       where: {
         examId,
@@ -193,7 +242,13 @@ export class ExamService {
       if (existingSession.status === ExamSessionStatus.IN_PROGRESS) {
         return this.getSessionWithDetails(existingSession.id);
       }
-      throw new UnauthorizedException('You have already completed this exam');
+      throw new BadRequestException('You have already completed this exam');
+    }
+
+    let timeoutAt = null;
+
+    if (exam.timeLimit > 0) {
+      timeoutAt = new Date(now.getTime() + exam.timeLimit * 60 * 1000);
     }
 
     const session = await this.examSessionModel.create({
@@ -202,6 +257,7 @@ export class ExamService {
       status: ExamSessionStatus.IN_PROGRESS,
       currentQuestionIndex: 0,
       startedAt: new Date(),
+      timeoutAt,
     });
 
     return this.getSessionWithDetails(session.id);
@@ -212,8 +268,17 @@ export class ExamService {
       where: { id: sessionId, studentId: userId },
     });
 
-    if (!session || session.status !== ExamSessionStatus.IN_PROGRESS) {
-      throw new UnauthorizedException('Invalid session or session expired');
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    if (session.timeoutAt && session.timeoutAt < new Date()) {
+      await this.finishExam(sessionId, userId);
+      throw new BadRequestException('Exam time has expired');
+    }
+
+    if (session.status !== ExamSessionStatus.IN_PROGRESS) {
+      throw new BadRequestException('Session is not in progress');
     }
 
     await this.examAnswersModel.create({
@@ -230,8 +295,12 @@ export class ExamService {
       where: { id: sessionId, studentId: userId },
     });
 
-    if (!session || session.status !== ExamSessionStatus.IN_PROGRESS) {
-      throw new UnauthorizedException('Invalid session or session expired');
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    if (session.status !== ExamSessionStatus.IN_PROGRESS) {
+      throw new BadRequestException('Session is not in progress');
     }
 
     await session.update({
@@ -239,7 +308,66 @@ export class ExamService {
       completedAt: new Date(),
     });
 
+    await this.calculateScore(+sessionId);
+
     return this.getSessionWithDetails(sessionId);
+  }
+
+  async calculateScore(sessionId: number) {
+    const session = await this.examSessionModel.findByPk(sessionId, {
+      include: [
+        {
+          model: Exam,
+          include: [Question],
+        },
+        {
+          model: ExamAnswers,
+        },
+      ],
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    const totalQuestions = session.exam.questions.length;
+    let correctAnswers = 0;
+    const answers = [];
+
+    for (const question of session.exam.questions) {
+      const userAnswer = session.answers.find(
+        (a) => a.questionId === question.id,
+      );
+
+      const correctAnswer = question.options[question.correctOption];
+      const isCorrect = userAnswer?.answer === correctAnswer;
+
+      if (isCorrect) {
+        correctAnswers++;
+      }
+
+      answers.push({
+        questionId: question.id,
+        isCorrect,
+        userAnswer: userAnswer?.answer || '',
+        correctAnswer,
+      });
+    }
+
+    const score = Math.round((correctAnswers / totalQuestions) * 100);
+
+    await session.update({
+      score,
+      status: ExamSessionStatus.COMPLETED,
+      completedAt: new Date(),
+    });
+
+    return {
+      score,
+      correctAnswers,
+      totalQuestions,
+      answers,
+    };
   }
 
   private async getSessionWithDetails(sessionId: number) {
@@ -269,5 +397,81 @@ export class ExamService {
         },
       ],
     });
+  }
+
+  async getExamWithSessions(examId: number) {
+    const exam = await this.examModel.findOne({
+      where: { id: examId },
+      include: [
+        {
+          model: Group,
+          attributes: ['id', 'name'],
+        },
+        {
+          model: ExamSession,
+          where: {
+            status: ExamSessionStatus.COMPLETED,
+          },
+          required: false,
+          include: [
+            {
+              model: User,
+              attributes: ['id', 'name', 'surname'],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+
+    return exam;
+  }
+
+  async getExamSessionDetails(examId: number, sessionId: number) {
+    const session = await this.examSessionModel.findOne({
+      where: {
+        id: sessionId,
+        examId: examId,
+      },
+      include: [
+        {
+          model: User,
+          as: 'student',
+          attributes: ['id', 'name', 'surname'],
+        },
+        {
+          model: Exam,
+          include: [
+            {
+              model: Question,
+              through: { attributes: [] },
+            },
+            {
+              model: Group,
+              attributes: ['id', 'name'],
+            },
+            {
+              model: User,
+              as: 'createdBy',
+              attributes: ['id', 'name', 'surname'],
+            },
+          ],
+        },
+        {
+          model: ExamAnswers,
+          as: 'answers',
+          attributes: ['questionId', 'answer'],
+        },
+      ],
+    });
+
+    if (!session) {
+      throw new NotFoundException('Exam session not found');
+    }
+
+    return session;
   }
 }

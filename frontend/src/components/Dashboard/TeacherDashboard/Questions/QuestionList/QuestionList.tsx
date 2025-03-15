@@ -68,7 +68,22 @@ export const QuestionList = () => {
 
   const handleCreateQuestion = async (data: QuestionFormData) => {
     try {
-      const newQuestion = await questionsService.createQuestion(data);
+      const formData = new FormData();
+
+      formData.append("text", data.text);
+      formData.append("options", JSON.stringify(data.options));
+      formData.append("correctOption", data.correctOption.toString());
+      if (data.subjectId)
+        formData.append("subjectId", data.subjectId.toString());
+      if (data.topicId) formData.append("topicId", data.topicId.toString());
+      if (data.subtopicId)
+        formData.append("subtopicId", data.subtopicId.toString());
+
+      if (data.image) {
+        formData.append("image", data.image);
+      }
+
+      const newQuestion = await questionsService.createQuestion(formData);
       setQuestions([...questions, newQuestion]);
       setShowAddModal(false);
       toast.success("Question created successfully");
@@ -78,13 +93,35 @@ export const QuestionList = () => {
   };
 
   const handleUpdateQuestion = async (data: QuestionFormData) => {
-    console.log(selectedQuestion, data);
     if (!selectedQuestion) return;
 
     try {
+      const formData = new FormData();
+
+      formData.append("text", data.text);
+      formData.append("options", JSON.stringify(data.options));
+      formData.append("correctOption", data.correctOption.toString());
+
+      if (data.subjectId) {
+        formData.append("subjectId", data.subjectId.toString());
+      }
+      if (data.topicId) {
+        formData.append("topicId", data.topicId.toString());
+      }
+      if (data.subtopicId) {
+        formData.append("subtopicId", data.subtopicId.toString());
+      }
+
+      if (data.image instanceof File) {
+        formData.append("image", data.image);
+      }
+      // else if (data.imageUrl === null) {
+      //   formData.append("removeImage", "true");
+      // }
+
       const updatedQuestion = await questionsService.updateQuestion(
         selectedQuestion.id,
-        data
+        formData
       );
       setQuestions(
         questions.map((q) =>

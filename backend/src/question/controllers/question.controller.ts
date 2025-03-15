@@ -8,12 +8,16 @@ import {
   Delete,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { QuestionService } from '../services/question.service';
 import { CreateQuestionDto } from '../dtos/create-question.dto';
 import { JwtAuthGuard } from 'src/auth';
 import { Roles, RolesGuard } from 'src/auth/role.guard';
 import { UserType } from 'src/user/enums';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { imageFileFilter, questionImageStorage } from '../utils';
 
 @Controller('questions')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,9 +25,23 @@ export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
   @Post()
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: questionImageStorage,
+      fileFilter: imageFileFilter,
+    }),
+  )
   @Roles(UserType.EXAMINER)
-  create(@Request() req, @Body() createQuestionDto: CreateQuestionDto) {
-    return this.questionService.create(createQuestionDto, req.user.userId);
+  create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createQuestionDto: CreateQuestionDto,
+    @Request() req,
+  ) {
+    const dto = {
+      ...createQuestionDto,
+      imageUrl: file?.filename || null,
+    };
+    return this.questionService.create(dto, req.user.userId);
   }
 
   @Get()
@@ -33,12 +51,23 @@ export class QuestionController {
   }
 
   @Put(':id')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: questionImageStorage,
+      fileFilter: imageFileFilter,
+    }),
+  )
   @Roles(UserType.EXAMINER)
   update(
+    @UploadedFile() file: Express.Multer.File,
     @Param('id') id: string,
     @Body() updateQuestionDto: CreateQuestionDto,
   ) {
-    return this.questionService.update(+id, updateQuestionDto);
+    const dto = {
+      ...updateQuestionDto,
+      imageUrl: file?.filename || null,
+    };
+    return this.questionService.update(+id, dto);
   }
 
   @Delete(':id')

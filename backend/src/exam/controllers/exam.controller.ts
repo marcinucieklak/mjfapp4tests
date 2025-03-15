@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ExamService } from '../services/exam.service';
 import { CreateExamDto } from '../dtos/create-exam.dto';
@@ -36,6 +37,21 @@ export class ExamController {
   @Roles(UserType.EXAMINER)
   async findOne(@Param('id') id: string, @Request() req) {
     return this.examService.findOne(+id, req.user.userId);
+  }
+
+  @Get(':id/results')
+  @Roles(UserType.EXAMINER)
+  async getExamWithSessions(@Param('id', ParseIntPipe) examId: number) {
+    return this.examService.getExamWithSessions(examId);
+  }
+
+  @Get(':examId/sessions/:sessionId')
+  @Roles(UserType.EXAMINER)
+  async getExamSessionDetails(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+  ) {
+    return this.examService.getExamSessionDetails(examId, sessionId);
   }
 
   @Put(':id')

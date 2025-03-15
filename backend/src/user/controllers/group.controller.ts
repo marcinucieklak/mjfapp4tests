@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Logger,
+  Put,
 } from '@nestjs/common';
 import { GroupService } from '../services/group.service';
 import { CreateGroupDto } from '../dtos/create-group.dto.user';
@@ -15,6 +16,7 @@ import { AddStudentToGroupDto } from '../dtos/add-student-to-group.dto.user';
 import { JwtAuthGuard } from 'src/auth';
 import { Roles } from 'src/auth/role.guard';
 import { UserType } from '../enums';
+import { UpdateGroupDto } from '../dtos/update-group.dto';
 
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +35,21 @@ export class GroupController {
   @Roles(UserType.EXAMINER)
   findAll(@Request() req) {
     return this.groupService.findAll(req.user.userId);
+  }
+
+  @Put(':id')
+  @Roles(UserType.EXAMINER)
+  async updateGroup(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() dto: UpdateGroupDto,
+  ) {
+    return this.groupService.updateGroup(+id, req.user.userId, dto);
+  }
+
+  @Delete(':id')
+  async deleteGroup(@Param('id') id: string, @Request() req) {
+    return this.groupService.deleteGroup(+id, req.user.userId);
   }
 
   @Get(':id')

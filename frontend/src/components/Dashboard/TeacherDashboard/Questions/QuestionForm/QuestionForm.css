@@ -1,0 +1,24 @@
+.image-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.image-preview-container img {
+  max-width: 100%;
+  border-radius: 0.375rem;
+}
+
+.remove-image-button {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  padding: 0.25rem;
+  line-height: 1;
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.remove-image-button:hover {
+  background-color: var(--bs-danger);
+  color: white;
+}

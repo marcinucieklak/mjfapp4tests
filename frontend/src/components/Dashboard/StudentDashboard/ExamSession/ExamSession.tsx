@@ -285,7 +285,6 @@ export const ExamSession = () => {
                     : option === currentAnswer
                 }
                 onChange={(e) => handleOptionChange(e.target.value)}
-                disabled={isSubmitting || submittedAnswer !== undefined}
               />
               <label
                 className="form-check-label"

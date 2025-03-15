@@ -110,8 +110,8 @@ export const StudentExams = () => {
                         <small className="text-muted">
                           Created {formatDate(exam.createdAt)}
                         </small>
-                        <span className="badge bg-secondary">
-                          {exam.questionsCount} questions
+                        <span className="badge bg-secondary text-uppercase">
+                          {exam.questionDisplayMode}
                         </span>
                       </div>
                     </div>

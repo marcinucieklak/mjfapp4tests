@@ -27,7 +27,7 @@ export class ExamService {
     @InjectModel(ExamAnswers)
     private examAnswersModel: typeof ExamAnswers,
   ) {
-    this.calculateScore(24);
+    // this.calculateScore(24);
   }
 
   async create(createExamDto: CreateExamDto, userId: number) {

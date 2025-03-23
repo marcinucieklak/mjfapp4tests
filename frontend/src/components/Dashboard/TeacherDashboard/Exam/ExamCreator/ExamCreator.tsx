@@ -346,7 +346,25 @@ export const ExamCreator = () => {
 
             <div className="questions-grid">
               {filteredQuestions.map((question) => (
-                <div key={question.id} className="card question-card">
+                <div
+                  key={question.id}
+                  className={`card question-card cursor-pointer ${
+                    watch("selectedQuestions").includes(question.id)
+                      ? "border-primary"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    const isSelected = watch("selectedQuestions").includes(
+                      question.id
+                    );
+                    const newQuestions = isSelected
+                      ? watch("selectedQuestions").filter(
+                          (id) => id !== question.id
+                        )
+                      : [...watch("selectedQuestions"), question.id];
+                    setValue("selectedQuestions", newQuestions);
+                  }}
+                >
                   <div className="card-body">
                     <div className="form-check">
                       <input
@@ -356,14 +374,8 @@ export const ExamCreator = () => {
                         checked={watch("selectedQuestions").includes(
                           question.id
                         )}
-                        onChange={(e) => {
-                          const newQuestions = e.target.checked
-                            ? [...watch("selectedQuestions"), question.id]
-                            : watch("selectedQuestions").filter(
-                                (id) => id !== question.id
-                              );
-                          setValue("selectedQuestions", newQuestions);
-                        }}
+                        onChange={(e) => e.preventDefault()}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <label
                         className="form-check-label"

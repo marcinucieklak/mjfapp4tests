@@ -149,8 +149,7 @@ export const ExamSession = () => {
   const handleSubmitAnswer = async () => {
     if (!session || !currentAnswer) return;
 
-    const currentQuestion =
-      session.exam.questions[session.currentQuestionIndex];
+    const currentQuestion = shuffledQuestions[session.currentQuestionIndex];
     setIsSubmitting(true);
 
     try {
@@ -160,7 +159,7 @@ export const ExamSession = () => {
         currentAnswer
       );
 
-      if (session.currentQuestionIndex === session.exam.questions.length - 1) {
+      if (session.currentQuestionIndex === shuffledQuestions.length - 1) {
         await studentsService.finishExam(session.id);
         toast.success("Exam completed successfully!");
         navigate("/student/dashboard/exams");
@@ -272,7 +271,17 @@ export const ExamSession = () => {
 
         <div className="options-list">
           {shuffledOptionsList.map((option, optionIndex) => (
-            <div className="form-check" key={optionIndex}>
+            <div
+              className={`form-check cursor-pointer ${
+                submittedAnswer !== undefined ? "opacity-75" : ""
+              }`}
+              key={optionIndex}
+              onClick={() => {
+                if (!isSubmitting && submittedAnswer === undefined) {
+                  handleOptionChange(option);
+                }
+              }}
+            >
               <input
                 className="form-check-input"
                 type="radio"
@@ -287,7 +296,7 @@ export const ExamSession = () => {
                 onChange={(e) => handleOptionChange(e.target.value)}
               />
               <label
-                className="form-check-label"
+                className="form-check-label w-100"
                 htmlFor={`option-${question.id}-${optionIndex}`}
               >
                 {option}
@@ -342,7 +351,7 @@ export const ExamSession = () => {
   }
 
   const isLastQuestion =
-    session.currentQuestionIndex === session.exam.questions.length - 1;
+    session.currentQuestionIndex === shuffledQuestions.length - 1;
 
   return (
     <div className="container mt-4">
@@ -366,9 +375,9 @@ export const ExamSession = () => {
               <span className="badge bg-primary">
                 {session.exam.questionDisplayMode === DisplayMode.SINGLE
                   ? `Question ${session.currentQuestionIndex + 1} of ${
-                      session.exam.questions.length
+                      shuffledQuestions.length
                     }`
-                  : `${session.answers.length} of ${session.exam.questions.length} answered`}
+                  : `${session.answers.length} of ${shuffledQuestions.length} answered`}
               </span>
             </div>
           </div>
@@ -405,7 +414,7 @@ export const ExamSession = () => {
                 className="btn btn-primary"
                 onClick={() => handleFinishExam()}
                 disabled={
-                  session.answers.length !== session.exam.questions.length ||
+                  session.answers.length !== shuffledQuestions.length ||
                   isSubmitting
                 }
               >

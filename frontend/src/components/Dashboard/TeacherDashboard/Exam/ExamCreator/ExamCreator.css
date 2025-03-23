@@ -1,9 +1,60 @@
-.card {
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
+.question-card {
+  transition: all 0.2s ease-in-out;
 }
 
-.card-header {
-  border-bottom: none;
-  padding: 1.5rem;
+.question-card.cursor-pointer {
+  cursor: pointer;
+}
+
+.question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.question-card.border-primary {
+  border-width: 2px;
+}
+
+.questions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.question-card {
+  transition: all 0.2s ease-in-out;
+  height: 100%;
+}
+
+.question-card.cursor-pointer {
+  cursor: pointer;
+}
+
+.question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.question-card.border-primary {
+  border-width: 2px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.option-card {
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.option-card.option-correct {
+  background-color: rgba(25, 135, 84, 0.1);
+  border: 1px solid rgba(25, 135, 84, 0.2);
+  color: #198754;
 }

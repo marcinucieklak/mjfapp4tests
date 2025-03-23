@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -16,6 +17,8 @@ import { SubmitAnswerDto } from '../dtos/submit-answer.dto';
 
 @Injectable()
 export class ExamService {
+  private readonly logger = new Logger(ExamService.name);
+
   constructor(
     @InjectModel(Exam)
     private examModel: typeof Exam,
@@ -23,7 +26,9 @@ export class ExamService {
     private examSessionModel: typeof ExamSession,
     @InjectModel(ExamAnswers)
     private examAnswersModel: typeof ExamAnswers,
-  ) {}
+  ) {
+    this.calculateScore(24);
+  }
 
   async create(createExamDto: CreateExamDto, userId: number) {
     const exam = await this.examModel.create({
@@ -406,6 +411,10 @@ export class ExamService {
         {
           model: Group,
           attributes: ['id', 'name'],
+        },
+        {
+          model: Question,
+          through: { attributes: [] },
         },
         {
           model: ExamSession,
